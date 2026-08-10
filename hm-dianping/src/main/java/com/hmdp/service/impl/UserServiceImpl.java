@@ -1,8 +1,11 @@
 package com.hmdp.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.hmdp.dto.LoginFormDTO;
 import com.hmdp.dto.Result;
+import com.hmdp.dto.UserDTO;
 import com.hmdp.entity.User;
 import com.hmdp.mapper.UserMapper;
 import com.hmdp.service.IUserService;
@@ -11,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpSession;
+
+import static com.hmdp.utils.SystemConstants.USER_NICK_NAME_PREFIX;
 
 /**
  * <p>
@@ -41,5 +46,49 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         log.debug("发送短信验证码成功，验证码：{}", code);//短信业务开发困难，项目侧重点不在这
 
         return Result.ok();
+    }
+
+    @Override
+    public Result login(LoginFormDTO loginForm, HttpSession session) {
+        //1. 校验手机号
+        String phone = loginForm.getPhone();
+        if (RegexUtils.isPhoneInvalid(phone)) {
+
+            return Result.fail("手机号格式错误");
+        }
+        //2. 校验验证码
+        Object cacheCode = session.getAttribute("code");
+        String code = loginForm.getCode();
+        //3.不一致，报错
+        if (cacheCode == null || !cacheCode.toString().equals(code)) {
+            log.debug("验证码错误，缓存：{}，输入：{}", cacheCode, code);
+            return Result.fail("验证码错误");
+        }
+
+        //4.一致，根据手机号查询用户
+        User user = query().eq("phone", phone).one();
+        session.setAttribute("code", null);//清除验证码
+
+        //5.判断用户是否存在
+        if (user == null) {
+            //6.不存在，创建新用户并保存
+            user =createUserWithPhone(phone);
+
+        }
+
+
+
+        //7.保存用户信息到session
+        UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
+        session.setAttribute("user", userDTO);
+        return Result.ok();
+    }
+
+    private User createUserWithPhone(String phone) {
+        User user = new User();
+        user.setPhone(phone);
+        user.setNickName( USER_NICK_NAME_PREFIX+ RandomUtil.randomString(10));
+        save(user);
+        return  user;
     }
 }
