@@ -38,6 +38,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+
     @Override
     public Result sendCode(String phone, HttpSession session) {
         //1. 校验手机号
@@ -50,7 +51,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         String code = RandomUtil.randomNumbers(6);
 
         //4.保存验证码到redis
-        stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY+phone,code,LOGIN_CODE_TTL, TimeUnit.MINUTES);
+        stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY + phone, code, LOGIN_CODE_TTL, TimeUnit.MINUTES);
         //5.发送验证码
         log.debug("发送短信验证码成功，验证码：{}", code);//短信业务开发困难，项目侧重点不在这
 
@@ -75,13 +76,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         }
 
         //4.一致，根据手机号查询用户
+        log.info("验证码正确");
         User user = query().eq("phone", phone).one();
         session.setAttribute("code", null);//清除验证码
 
         //5.判断用户是否存在
         if (user == null) {
             //6.不存在，创建新用户并保存
-            user =createUserWithPhone(phone);
+            user = createUserWithPhone(phone);
 
         }
         //7.保存用户信息到redis
@@ -91,21 +93,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         //7.2将User对象转为HashMap存储
         UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
         Map<String, Object> userMap = BeanUtil.beanToMap(userDTO);
+        userMap.put("id", userDTO.getId().toString());
         //7.3存储
-        stringRedisTemplate.opsForHash().putAll(LOGIN_USER_KEY+token, userMap);
+        stringRedisTemplate.opsForHash().putAll(LOGIN_USER_KEY + token, userMap);
         //7.4设置token有效期
-        stringRedisTemplate.expire(LOGIN_USER_KEY+token, LOGIN_USER_TTL, TimeUnit.MINUTES);
+        stringRedisTemplate.expire(LOGIN_USER_KEY + token, LOGIN_USER_TTL, TimeUnit.MINUTES);
         //8.返回token
 
-
-        return Result.ok();
+        log.info("用户登录成功，token：{}", token);
+        return Result.ok(token);
     }
 
     private User createUserWithPhone(String phone) {
         User user = new User();
         user.setPhone(phone);
-        user.setNickName( USER_NICK_NAME_PREFIX+ RandomUtil.randomString(10));
+        user.setNickName(USER_NICK_NAME_PREFIX + RandomUtil.randomString(10));
         save(user);
-        return  user;
+        return user;
     }
 }
