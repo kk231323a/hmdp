@@ -4,6 +4,7 @@ package com.hmdp.controller;
 import com.hmdp.dto.Result;
 import com.hmdp.entity.ShopType;
 import com.hmdp.service.IShopTypeService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,6 +21,7 @@ import java.util.List;
  * @since 2021-12-22
  */
 @RestController
+@Slf4j
 @RequestMapping("/shop-type")
 public class ShopTypeController {
     @Resource
@@ -27,6 +29,7 @@ public class ShopTypeController {
 
     @GetMapping("list")
     public Result queryTypeList() {
+        log.info("查询商铺类型列表");
 
 
         return typeService.getShopTypes();

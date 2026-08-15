@@ -7,6 +7,7 @@ import com.hmdp.dto.Result;
 import com.hmdp.entity.Shop;
 import com.hmdp.service.IShopService;
 import com.hmdp.utils.SystemConstants;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -20,6 +21,7 @@ import javax.annotation.Resource;
  * @since 2021-12-22
  */
 @RestController
+@Slf4j
 @RequestMapping("/shop")
 public class ShopController {
 
@@ -56,6 +58,7 @@ public class ShopController {
      */
     @PutMapping
     public Result updateShop(@RequestBody Shop shop) {
+        log.info("更新商铺信息，商铺id：{}", shop.getId());
         // 写入数据库
         return shopService.update(shop);
     }
